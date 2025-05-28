@@ -1,0 +1,58 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+data = pd.read_csv('breast_cancer.csv')
+print("dataset loaded:")
+print(data.head())
+data = data.drop(columns=['id', 'Unnamed: 32'], errors='ignore')
+data = data.dropna()
+x = data[['radius_mean', 'texture_mean']]
+y = data['diagnosis'].map({'B': 0, 'M': 1})
+print(f"total samples: {len(data)}")
+print(f"benign (0): {sum(y == 0)}")
+print(f"malignant (1): {sum(y == 1)}")
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+print(f"training samples: {len(x_train)}")
+print(f"test samples: {len(x_test)}")
+model = LogisticRegression(max_iter=1000)
+model.fit(x_train, y_train)
+y_pred = model.predict(x_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"accuracy: {accuracy:.3f}")
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+benign = data[data['diagnosis'] == 'B']
+malignant = data[data['diagnosis'] == 'M']
+plt.scatter(benign['radius_mean'], benign['texture_mean'], color='blue', alpha=0.6, label='benign', s=30)
+plt.scatter(malignant['radius_mean'], malignant['texture_mean'], color='red', alpha=0.6, label='malignant', s=30)
+plt.xlabel('radius')
+plt.ylabel('texture')
+plt.title('training data')
+plt.legend()
+plt.subplot(1, 2, 2)
+plt.scatter(x_test[y_test==0]['radius_mean'], x_test[y_test==0]['texture_mean'], color='blue', alpha=0.6, label='benign', s=30)
+plt.scatter(x_test[y_test==1]['radius_mean'], x_test[y_test==1]['texture_mean'], color='red', alpha=0.6, label='malignant', s=30)
+x_min, x_max = x_test['radius_mean'].min() - 1, x_test['radius_mean'].max() + 1
+y_min, y_max = x_test['texture_mean'].min() - 1, x_test['texture_mean'].max() + 1
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1))
+mesh_points = np.c_[xx.ravel(), yy.ravel()]
+z = model.predict(mesh_points)
+z = z.reshape(xx.shape)
+plt.contour(xx, yy, z, levels=[0.5], colors='black', linestyles='--', linewidths=2)
+plt.xlabel('radius')
+plt.ylabel('texture')
+plt.title('decision boundary')
+plt.legend()
+plt.tight_layout()
+plt.show()
+new_tumor_1 = [[12.0, 15.0]]
+new_tumor_2 = [[20.0, 25.0]]
+pred_1 = model.predict(new_tumor_1)
+pred_2 = model.predict(new_tumor_2)
+result_1 = 'malignant' if pred_1[0] == 1 else 'benign'
+result_2 = 'malignant' if pred_2[0] == 1 else 'benign'
+print(f"new tumor 1 (radius=12, texture=15): {result_1}")
+print(f"new tumor 2 (radius=20, texture=25): {result_2}")
